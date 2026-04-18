@@ -31,8 +31,8 @@ def load_hybrid_models():
     # 1. Load Keras Feature Extractor
     extractor = tf.keras.models.load_model(EXTRACTOR_PATH)
     
-    # 2. Load XGBoost Classifier
-    classifier = xgb.XGBClassifier()
+    # 2. Load XGBoost Native Booster (Bypasses Scikit-Learn!)
+    classifier = xgb.Booster()
     classifier.load_model(XGB_PATH)
     
     return extractor, classifier
@@ -76,9 +76,12 @@ if uploaded_file is not None:
                 # Extracts 2048 mathematical features from the image
                 features = feature_extractor.predict(img_processed)
                 
-                # --- PHASE 2: XGBOOST CLASSIFICATION ---
-                # Predict probabilities based on the 2048 features
-                xgb_probabilities = xgb_classifier.predict_proba(features)[0]
+               # --- PHASE 2: XGBOOST CLASSIFICATION ---
+                # Convert features to DMatrix (XGBoost's native format)
+                dmatrix = xgb.DMatrix(features)
+                
+                # Predict probabilities using the native engine
+                xgb_probabilities = xgb_classifier.predict(dmatrix)[0]
                 
                 # Find the highest probability
                 predicted_class_index = np.argmax(xgb_probabilities)
